@@ -88,8 +88,8 @@ $sql_incasari = "SELECT
     COUNT(*) as numar_rezervari,
     SUM(pret_total) as total_incasat
 FROM rezervari
-WHERE YEAR(creat_la) = ?
-" . ($luna_selectata ? "AND MONTH(creat_la) = ?" : "") . "
+WHERE YEAR(data_creare) = ?
+" . ($luna_selectata ? "AND MONTH(data_creare) = ?" : "") . "
 GROUP BY status_plata";
 
 $stmt = $conn->prepare($sql_incasari);
@@ -135,8 +135,8 @@ $sql_reduceri = "
         COALESCE(SUM(pret_total * 0.02), 0) as valoare_reduceri
     FROM rezervari r
     JOIN clienti c ON r.client_id = c.id
-    WHERE YEAR(r.creat_la) = ?
-    " . ($luna_selectata ? "AND MONTH(r.creat_la) = ?" : "") . "
+    WHERE YEAR(r.data_creare) = ?
+    " . ($luna_selectata ? "AND MONTH(r.data_creare) = ?" : "") . "
     AND c.este_client_top = 1
     AND r.status_plata = 'integral'
     
@@ -147,8 +147,8 @@ $sql_reduceri = "
         COALESCE(COUNT(*), 0) as numar_aplicari,
         COALESCE(SUM(pret_total * 0.05), 0) as valoare_reduceri
     FROM rezervari
-    WHERE YEAR(creat_la) = ?
-    " . ($luna_selectata ? "AND MONTH(creat_la) = ?" : "") . "
+    WHERE YEAR(data_creare) = ?
+    " . ($luna_selectata ? "AND MONTH(data_creare) = ?" : "") . "
     AND status_plata = 'integral'
     
     UNION ALL
@@ -158,8 +158,8 @@ $sql_reduceri = "
         COALESCE(SUM(numar_copii), 0) as numar_aplicari,
         COALESCE(SUM(pret_cazare * 0.5 * numar_copii), 0) as valoare_reduceri
     FROM rezervari
-    WHERE YEAR(creat_la) = ?
-    " . ($luna_selectata ? "AND MONTH(creat_la) = ?" : "") . "
+    WHERE YEAR(data_creare) = ?
+    " . ($luna_selectata ? "AND MONTH(data_creare) = ?" : "") . "
     AND numar_copii > 0
     AND status_plata != 'anulata'";
 
