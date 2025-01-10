@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3305
--- Generation Time: Jan 08, 2025 at 10:45 PM
+-- Generation Time: Jan 10, 2025 at 03:58 AM
 -- Server version: 8.3.0
 -- PHP Version: 8.3.6
 
@@ -20,7 +20,7 @@ SET time_zone = "+00:00";
 --
 -- Database: `tema10`
 --
-CREATE DATABASE IF NOT EXISTS `tema101` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE DATABASE IF NOT EXISTS `tema10` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE `tema10`;
 
 DELIMITER $$
@@ -28,17 +28,7 @@ DELIMITER $$
 -- Functions
 --
 DROP FUNCTION IF EXISTS `calculeaza_pret_total`$$
-CREATE FUNCTION `calculeaza_pret_total` (
-    `pret_cazare` DECIMAL(10,2), 
-    `optiune_transport_id` INT, 
-    `adulti` INT, 
-    `copii` INT, 
-    `este_client_top` BOOLEAN, 
-    `tip_plata` VARCHAR(20)
-) 
-RETURNS DECIMAL(10,2)
-DETERMINISTIC
-BEGIN
+CREATE DEFINER=`root`@`localhost` FUNCTION `calculeaza_pret_total` (`pret_cazare` DECIMAL(10,2), `optiune_transport_id` INT, `adulti` INT, `copii` INT, `este_client_top` BOOLEAN, `tip_plata` VARCHAR(20)) RETURNS DECIMAL(10,2) DETERMINISTIC BEGIN
     DECLARE total DECIMAL(10,2);
     DECLARE total_cazare DECIMAL(10,2);
     DECLARE total_transport DECIMAL(10,2);
@@ -89,13 +79,13 @@ CREATE TABLE IF NOT EXISTS `chitante` (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
   `rezervare_id` int DEFAULT NULL,
   `suma` decimal(10,2) NOT NULL,
-  `tip_operatie` varchar(20) COLLATE utf8mb4_general_ci DEFAULT 'plata',
+  `tip_operatie` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'plata',
   `data_plata` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   KEY `fk_chitante_rezervari` (`rezervare_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=87 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `chitante`
@@ -106,7 +96,13 @@ INSERT INTO `chitante` (`id`, `rezervare_id`, `suma`, `tip_operatie`, `data_plat
 (37, 39, 2137.50, 'plata', '2025-01-08 21:05:45', '2025-01-08 21:05:45'),
 (36, 38, 2048.20, 'plata', '2025-01-08 20:34:04', '2025-01-08 20:34:04'),
 (34, 36, 262.00, 'plata', '2025-01-08 19:41:06', '2025-01-08 19:41:06'),
-(33, 35, 1805.00, 'plata', '2025-01-08 19:31:32', '2025-01-08 19:31:32');
+(33, 35, 1805.00, 'plata', '2025-01-08 19:31:32', '2025-01-08 19:31:32'),
+(81, 126, 4.00, 'plata', '2025-01-10 03:44:34', '2025-01-10 03:44:34'),
+(82, 127, 655.50, 'plata', '2025-01-10 03:45:34', '2025-01-10 03:45:34'),
+(83, 128, 2090.00, 'plata', '2025-01-10 03:46:36', '2025-01-10 03:46:36'),
+(84, 129, 200.00, 'plata', '2025-01-10 03:53:45', '2025-01-10 03:53:45'),
+(85, 130, 655.50, 'plata', '2025-01-10 03:55:04', '2025-01-10 03:55:04'),
+(86, 131, 845.50, 'plata', '2025-01-10 03:55:55', '2025-01-10 03:55:55');
 
 --
 -- Triggers `chitante`
@@ -114,11 +110,9 @@ INSERT INTO `chitante` (`id`, `rezervare_id`, `suma`, `tip_operatie`, `data_plat
 DROP TRIGGER IF EXISTS `after_chitanta_insert`;
 DELIMITER $$
 CREATE TRIGGER `after_chitanta_insert` AFTER INSERT ON `chitante` FOR EACH ROW BEGIN
-    IF NEW.tip_operatie = 'plata' THEN
-        UPDATE rezervari 
-        SET suma_plata = suma_plata + NEW.suma
-        WHERE id = NEW.rezervare_id;
-    ELSEIF NEW.tip_operatie = 'retur' THEN
+    -- Nu mai actualizăm suma_plata pentru plăți normale
+    -- Actualizăm doar pentru retururi
+    IF NEW.tip_operatie = 'retur' THEN
         UPDATE rezervari 
         SET suma_plata = suma_plata - NEW.suma
         WHERE id = NEW.rezervare_id;
@@ -129,10 +123,15 @@ DELIMITER ;
 DROP TRIGGER IF EXISTS `calculeaza_suma_chitanta`;
 DELIMITER $$
 CREATE TRIGGER `calculeaza_suma_chitanta` BEFORE INSERT ON `chitante` FOR EACH ROW BEGIN
-    -- Folosim direct suma_plata din rezervare
-    SELECT suma_plata INTO NEW.suma
-    FROM rezervari
+    DECLARE v_suma_plata DECIMAL(10,2);
+    
+    -- Obținem suma_plata din rezervare
+    SELECT suma_plata INTO v_suma_plata
+    FROM rezervari 
     WHERE id = NEW.rezervare_id;
+    
+    -- Setăm suma chitanței exact la valoarea din rezervare
+    SET NEW.suma = v_suma_plata;
 END
 $$
 DELIMITER ;
@@ -146,8 +145,8 @@ DELIMITER ;
 DROP TABLE IF EXISTS `circuite`;
 CREATE TABLE IF NOT EXISTS `circuite` (
   `excursie_id` int NOT NULL,
-  `descriere_traseu` text COLLATE utf8mb4_general_ci NOT NULL,
-  `vizite_incluse` text COLLATE utf8mb4_general_ci,
+  `descriere_traseu` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `vizite_incluse` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`excursie_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -169,16 +168,16 @@ INSERT INTO `circuite` (`excursie_id`, `descriere_traseu`, `vizite_incluse`, `cr
 DROP TABLE IF EXISTS `clienti`;
 CREATE TABLE IF NOT EXISTS `clienti` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `prenume` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `nume` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `email` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-  `telefon` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `numar_identitate` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
+  `prenume` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `nume` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `telefon` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `numar_identitate` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `este_client_top` tinyint(1) DEFAULT '0',
   `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `numar_identitate` (`numar_identitate`)
-) ENGINE=MyISAM AUTO_INCREMENT=60 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=118 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `clienti`
@@ -189,7 +188,8 @@ INSERT INTO `clienti` (`id`, `prenume`, `nume`, `email`, `telefon`, `numar_ident
 (58, 'Gabriela', 'Stefan', 'gabriela.stefan@example.com', '0788890123', 'TZ456123', 0, '2025-01-08 22:30:01'),
 (41, 'Ana', 'Popa', 'ana.popa@example.com', '0722012345', 'TM009012', 1, '2025-01-08 19:31:32'),
 (42, 'Marius', 'Stan', 'mariu.stan@example.com', '0711901234', 'TM456789', 0, '2025-01-08 21:05:45'),
-(43, 'Alex', 'Stan', 'mariu.stan@example.com', '0711901234', 'TM454489', 0, '2025-01-08 21:05:45');
+(43, 'Alex', 'Stan', 'mariu.stan@example.com', '0711901234', 'TM454489', 0, '2025-01-08 21:05:45'),
+(117, 'Ana', 'Blandi ', 'ana@a.com', '0723981111', 'AB009019', 1, '2025-01-10 03:53:45');
 
 -- --------------------------------------------------------
 
@@ -200,12 +200,12 @@ INSERT INTO `clienti` (`id`, `prenume`, `nume`, `email`, `telefon`, `numar_ident
 DROP TABLE IF EXISTS `croaziere`;
 CREATE TABLE IF NOT EXISTS `croaziere` (
   `excursie_id` int NOT NULL,
-  `categorie_nava` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `facilitati_vas` text COLLATE utf8mb4_general_ci,
-  `porturi_oprire` text COLLATE utf8mb4_general_ci,
-  `activitati_bord` text COLLATE utf8mb4_general_ci,
-  `descriere_traseu` text COLLATE utf8mb4_general_ci NOT NULL,
-  `vizite_incluse` text COLLATE utf8mb4_general_ci,
+  `categorie_nava` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `facilitati_vas` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `porturi_oprire` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `activitati_bord` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `descriere_traseu` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `vizite_incluse` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`excursie_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -228,19 +228,19 @@ INSERT INTO `croaziere` (`excursie_id`, `categorie_nava`, `facilitati_vas`, `por
 DROP TABLE IF EXISTS `excursii`;
 CREATE TABLE IF NOT EXISTS `excursii` (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `tip` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `oferta_speciala` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `tip_masa` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `tip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `oferta_speciala` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `tip_masa` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `sezon_id` int DEFAULT NULL,
-  `nume` varchar(200) COLLATE utf8mb4_general_ci NOT NULL,
-  `descriere` text COLLATE utf8mb4_general_ci,
+  `nume` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `descriere` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `data_inceput` date NOT NULL,
   `data_sfarsit` date NOT NULL,
   `pret_cazare_per_persoana` decimal(10,2) NOT NULL,
   `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `poza1` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `poza2` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `status` enum('activ','inactiv','anulat') COLLATE utf8mb4_general_ci DEFAULT 'activ',
+  `poza1` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `poza2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `status` enum('activ','inactiv','anulat') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'activ',
   `tip_cazare_id` bigint UNSIGNED NOT NULL,
   `locatie_id` bigint UNSIGNED NOT NULL,
   `numar_nopti` int NOT NULL,
@@ -277,7 +277,7 @@ DROP TABLE IF EXISTS `locatii`;
 CREATE TABLE IF NOT EXISTS `locatii` (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
   `tara_id` int DEFAULT NULL,
-  `nume` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `nume` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`)
@@ -311,10 +311,10 @@ INSERT INTO `locatii` (`id`, `tara_id`, `nume`, `creat_la`) VALUES
 DROP TABLE IF EXISTS `mesaje_contact`;
 CREATE TABLE IF NOT EXISTS `mesaje_contact` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `nume` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-  `email` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-  `subiect` varchar(200) COLLATE utf8mb4_general_ci NOT NULL,
-  `mesaj` text COLLATE utf8mb4_general_ci NOT NULL,
+  `nume` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `subiect` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `mesaj` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `data_trimitere` datetime NOT NULL,
   `citit` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`id`)
@@ -341,9 +341,9 @@ DROP TABLE IF EXISTS `optiuni_transport_excursii`;
 CREATE TABLE IF NOT EXISTS `optiuni_transport_excursii` (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
   `excursie_id` int DEFAULT NULL,
-  `tip_transport` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `tip_transport` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `pret_per_persoana` decimal(10,2) NOT NULL,
-  `descriere` text COLLATE utf8mb4_general_ci,
+  `descriere` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
@@ -394,16 +394,16 @@ DROP TABLE IF EXISTS `participanti`;
 CREATE TABLE IF NOT EXISTS `participanti` (
   `id` int NOT NULL AUTO_INCREMENT,
   `rezervare_id` int DEFAULT NULL,
-  `nume` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-  `prenume` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-  `email` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `telefon` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `numar_identitate` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
-  `tip_participant` enum('adult','copil') COLLATE utf8mb4_general_ci NOT NULL,
+  `nume` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `prenume` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `telefon` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `numar_identitate` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `tip_participant` enum('adult','copil') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_participanti_tip` (`tip_participant`),
   KEY `fk_participanti_rezervari` (`rezervare_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=63 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=103 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `participanti`
@@ -417,7 +417,10 @@ INSERT INTO `participanti` (`id`, `rezervare_id`, `nume`, `prenume`, `email`, `t
 (44, 38, 'Popa', 'Ana', 'ana.popa@example.com', '0722012345', 'TM009012', 'adult'),
 (41, 35, 'Popa', 'Ana', 'ana.popa@example.com', '0722012345', 'TM009012', 'adult'),
 (42, 36, 'Popa', 'Ana', 'ana.popa@example.com', '0722012345', 'TM009012', 'adult'),
-(43, 37, 'Popa', 'Ana', 'ana.popa@example.com', '0722012345', 'TM009012', 'adult');
+(43, 37, 'Popa', 'Ana', 'ana.popa@example.com', '0722012345', 'TM009012', 'adult'),
+(100, 129, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', ''),
+(101, 130, 'Blandi ', 'Ana', 'ana@a.com', '0744441111', 'AB009019', ''),
+(102, 131, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', '');
 
 -- --------------------------------------------------------
 
@@ -433,33 +436,34 @@ CREATE TABLE IF NOT EXISTS `rezervari` (
   `numar_adulti` int NOT NULL DEFAULT '1',
   `numar_copii` int NOT NULL DEFAULT '0',
   `pret_total` decimal(10,2) NOT NULL,
-  `status_plata` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `status_plata` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `suma_plata` decimal(10,2) NOT NULL,
-  `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `transport_id` int DEFAULT NULL,
   `pret_cazare` decimal(10,2) DEFAULT NULL,
   `pret_transport` decimal(10,2) DEFAULT NULL,
-  `data_creare` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `data_creare` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `data_modificare` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   KEY `idx_rezervari_status` (`status_plata`),
-  KEY `idx_rezervari_data` (`creat_la`),
   KEY `fk_rezervari_clienti` (`client_id`),
   KEY `fk_rezervari_excursii` (`excursie_id`),
   KEY `fk_rezervari_transport` (`transport_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=48 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=132 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `rezervari`
 --
 
-INSERT INTO `rezervari` (`id`, `client_id`, `excursie_id`, `numar_adulti`, `numar_copii`, `pret_total`, `status_plata`, `suma_plata`, `creat_la`, `transport_id`, `pret_cazare`, `pret_transport`, `data_creare`, `data_modificare`) VALUES
-(38, 41, 30, 1, 0, 2090.00, 'integral', 4138.20, '2025-01-08 20:34:04', 33, 2000.00, 200.00, '2025-01-08 20:34:04', '2025-01-08 20:34:04'),
-(39, 42, 31, 1, 1, 1425.00, 'integral', 3562.50, '2025-01-08 21:05:45', 34, 1500.00, 0.00, '2025-01-08 21:05:45', '2025-01-08 21:05:45'),
-(36, 41, 36, 1, 0, 1310.00, 'avans', 524.00, '2025-01-08 19:41:06', 39, 1200.00, 110.00, '2025-01-08 19:41:06', '2025-01-08 19:41:06'),
-(35, 41, 52, 1, 0, 1805.00, 'integral', 3610.00, '2025-01-08 19:31:32', 54, 1900.00, 0.00, '2025-01-08 19:31:32', '2025-01-08 19:31:32'),
-(47, 59, 35, 1, 1, 1268.25, 'integral', 3170.63, '2025-01-08 22:30:01', 38, 1335.00, 0.00, '2025-01-08 22:30:01', '2025-01-08 22:30:01');
+INSERT INTO `rezervari` (`id`, `client_id`, `excursie_id`, `numar_adulti`, `numar_copii`, `pret_total`, `status_plata`, `suma_plata`, `transport_id`, `pret_cazare`, `pret_transport`, `data_creare`, `data_modificare`) VALUES
+(38, 41, 30, 1, 0, 2090.00, 'integral', 4138.20, 33, 2000.00, 200.00, '2025-01-08 20:34:04', '2025-01-08 20:34:04'),
+(39, 42, 31, 1, 1, 1425.00, 'integral', 3562.50, 34, 1500.00, 0.00, '2025-01-08 21:05:45', '2025-01-08 21:05:45'),
+(36, 41, 36, 1, 0, 1310.00, 'avans', 524.00, 39, 1200.00, 110.00, '2025-01-08 19:41:06', '2025-01-08 19:41:06'),
+(35, 41, 52, 1, 0, 1805.00, 'integral', 3610.00, 54, 1900.00, 0.00, '2025-01-08 19:31:32', '2025-01-08 19:31:32'),
+(47, 59, 35, 1, 1, 1268.25, 'integral', 3170.63, 38, 1335.00, 0.00, '2025-01-08 22:30:01', '2025-01-08 22:30:01'),
+(131, 117, 35, 1, 0, 845.50, 'integral', 845.50, 38, 890.00, 0.00, '2025-01-10 03:55:55', NULL),
+(130, 117, 32, 1, 0, 655.50, 'integral', 655.50, 35, 590.00, 100.00, '2025-01-10 03:55:04', NULL),
+(129, 117, 31, 1, 0, 1000.00, 'avans', 200.00, 34, 1000.00, 0.00, '2025-01-10 03:53:45', NULL);
 
 --
 -- Triggers `rezervari`
@@ -467,13 +471,12 @@ INSERT INTO `rezervari` (`id`, `client_id`, `excursie_id`, `numar_adulti`, `numa
 DROP TRIGGER IF EXISTS `actualizeaza_status_client_top`;
 DELIMITER $$
 CREATE TRIGGER `actualizeaza_status_client_top` AFTER INSERT ON `rezervari` FOR EACH ROW BEGIN
-    -- Verifică dacă clientul are mai mult de 3 rezervări în anul curent
-    -- Numără doar rezervările directe ale clientului, nu și participările
-    IF (SELECT COUNT(*) FROM rezervari 
+    IF (SELECT COUNT(*) 
+        FROM rezervari 
         WHERE client_id = NEW.client_id
         AND status_plata IN ('integral', 'partial', 'avans')
-        AND YEAR(creat_la) = YEAR(CURRENT_DATE)) >= 3 THEN
-        
+        AND YEAR(data_creare) = YEAR(CURRENT_DATE)) >= 3 
+    THEN
         UPDATE clienti
         SET este_client_top = true
         WHERE id = NEW.client_id;
@@ -501,9 +504,9 @@ DROP TABLE IF EXISTS `sejururi`;
 CREATE TABLE IF NOT EXISTS `sejururi` (
   `id` int NOT NULL AUTO_INCREMENT,
   `excursie_id` int NOT NULL,
-  `tip_camera` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `tip_camera` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `rating_hotel` int DEFAULT NULL,
-  `facilitati_hotel` text COLLATE utf8mb4_general_ci,
+  `facilitati_hotel` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   PRIMARY KEY (`id`),
   KEY `excursie_id` (`excursie_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -526,7 +529,7 @@ INSERT INTO `sejururi` (`id`, `excursie_id`, `tip_camera`, `rating_hotel`, `faci
 DROP TABLE IF EXISTS `sezoane`;
 CREATE TABLE IF NOT EXISTS `sezoane` (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `nume` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `nume` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`)
@@ -551,7 +554,7 @@ INSERT INTO `sezoane` (`id`, `nume`, `creat_la`) VALUES
 DROP TABLE IF EXISTS `tari`;
 CREATE TABLE IF NOT EXISTS `tari` (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `nume` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `nume` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`)
@@ -579,7 +582,7 @@ INSERT INTO `tari` (`id`, `nume`, `creat_la`) VALUES
 DROP TABLE IF EXISTS `tipuri_cazare`;
 CREATE TABLE IF NOT EXISTS `tipuri_cazare` (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `nume` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `nume` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`)
@@ -634,7 +637,7 @@ CREATE TABLE IF NOT EXISTS `vw_statistici_excursii` (
 DROP TABLE IF EXISTS `vw_raport_rezervari`;
 
 DROP VIEW IF EXISTS `vw_raport_rezervari`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_raport_rezervari`  AS SELECT `r`.`id` AS `id`, concat(`c`.`prenume`,' ',`c`.`nume`) AS `client`, `e`.`nume` AS `excursie`, `r`.`pret_total` AS `pret_total`, `r`.`status_plata` AS `status_plata`, `r`.`suma_plata` AS `suma_plata`, `r`.`creat_la` AS `creat_la` FROM ((`rezervari` `r` join `clienti` `c` on((`r`.`client_id` = `c`.`id`))) join `excursii` `e` on((`r`.`excursie_id` = `e`.`id`))) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_raport_rezervari`  AS SELECT `r`.`id` AS `id`, concat(`c`.`prenume`,' ',`c`.`nume`) AS `client`, `e`.`nume` AS `excursie`, `r`.`pret_total` AS `pret_total`, `r`.`status_plata` AS `status_plata`, `r`.`suma_plata` AS `suma_plata`, `r`.`data_creare` AS `creat_la` FROM ((`rezervari` `r` join `clienti` `c` on((`r`.`client_id` = `c`.`id`))) join `excursii` `e` on((`r`.`excursie_id` = `e`.`id`))) ;
 
 -- --------------------------------------------------------
 
