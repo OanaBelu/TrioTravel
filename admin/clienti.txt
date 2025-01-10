@@ -1,0 +1,230 @@
+<?php
+require_once 'check_auth.php';
+require_once '../conexiune.php';
+
+// Query pentru clienți activi, incluzând și participanții
+$sql_activi = "SELECT 
+    c.*,
+    COALESCE(
+        (
+            SELECT COUNT(DISTINCT rezervare_id) 
+            FROM (
+                SELECT r1.id as rezervare_id
+                FROM rezervari r1
+                WHERE r1.client_id = c.id 
+                AND r1.status_plata = 'integral'
+                
+                UNION
+                
+                SELECT p1.rezervare_id
+                FROM participanti p1
+                JOIN rezervari r2 ON p1.rezervare_id = r2.id
+                WHERE r2.status_plata = 'integral'
+                AND p1.nume = c.nume 
+                AND p1.prenume = c.prenume
+                AND (p1.email = c.email OR p1.telefon = c.telefon)
+            ) AS toate_rezervarile
+        ), 0
+    ) as numar_rezervari_active,
+    
+    COALESCE(
+        (SELECT SUM(r3.pret_total) 
+         FROM rezervari r3 
+         WHERE r3.client_id = c.id 
+         AND r3.status_plata = 'integral'
+        ), 0
+    ) as total_cheltuieli,
+    
+    CASE 
+        WHEN (
+            SELECT COUNT(DISTINCT rezervare_id) 
+            FROM (
+                SELECT r4.id as rezervare_id
+                FROM rezervari r4
+                WHERE r4.client_id = c.id 
+                AND r4.status_plata = 'integral'
+                AND YEAR(r4.creat_la) = YEAR(CURRENT_DATE)
+                
+                UNION
+                
+                SELECT p2.rezervare_id
+                FROM participanti p2
+                JOIN rezervari r5 ON p2.rezervare_id = r5.id
+                WHERE r5.status_plata = 'integral'
+                AND YEAR(r5.creat_la) = YEAR(CURRENT_DATE)
+                AND p2.nume = c.nume 
+                AND p2.prenume = c.prenume
+                AND (p2.email = c.email OR p2.telefon = c.telefon)
+            ) AS rezervari_anul_curent
+        ) >= 3 THEN 1 
+        ELSE 0 
+    END as este_client_fidel
+    
+FROM clienti c
+WHERE c.id NOT IN (
+    -- Excludem doar clienții care au DOAR rezervări anulate
+    SELECT client_id 
+    FROM rezervari r1
+    WHERE status_plata = 'anulata'
+    AND NOT EXISTS (
+        SELECT 1 
+        FROM rezervari r2 
+        WHERE r2.client_id = r1.client_id 
+        AND r2.status_plata = 'integral'
+    )
+)
+GROUP BY 
+    c.id, 
+    c.nume, 
+    c.prenume, 
+    c.email, 
+    c.telefon, 
+    c.este_client_top
+ORDER BY c.nume, c.prenume";
+
+// Query pentru clienți cu rezervări anulate
+$sql_anulate = "SELECT 
+    c.*,
+    COUNT(DISTINCT r.id) as numar_rezervari_anulate,
+    MAX(r.creat_la) as ultima_anulare
+FROM clienti c
+JOIN rezervari r ON r.client_id = c.id
+WHERE r.status_plata = 'anulata'
+GROUP BY 
+    c.id, 
+    c.nume, 
+    c.prenume, 
+    c.email, 
+    c.telefon,
+    c.este_client_top
+ORDER BY c.nume, c.prenume";
+
+$result_activi = $conn->query($sql_activi);
+$result_anulate = $conn->query($sql_anulate);
+
+if (!$result_activi) {
+    die("Eroare query: " . $conn->error);
+}
+?>
+
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Clienți</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <?php require 'navbar.php'; ?>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Clienți</h2>
+            <a href="adauga_client.php" class="btn btn-primary">+ Adaugă Client</a>
+        </div>
+
+        <!-- Tabel Clienți Activi -->
+        <h4 class="mb-3">Clienți Activi</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nume</th>
+                    <th>Email</th>
+                    <th>Telefon</th>
+                    <th>Rezervări</th>
+                    <th>Status</th>
+                    <th>Acțiuni</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php while ($client = $result_activi->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($client['nume'] . ' ' . $client['prenume']); ?></td>
+                        <td><?php echo htmlspecialchars($client['email']); ?></td>
+                        <td><?php echo htmlspecialchars($client['telefon']); ?></td>
+                        <td>
+                            <?php 
+                            if ($client['numar_rezervari_active'] > 0) {
+                                echo $client['numar_rezervari_active'] . ' rezervări/participări<br>';
+                                if ($client['total_cheltuieli'] > 0) {
+                                    echo '<small class="text-muted">';
+                                    echo number_format($client['total_cheltuieli'], 2) . ' EUR total';
+                                    echo '</small>';
+                                }
+                                if ($client['este_client_fidel']) {
+                                    echo '<br><span class="badge bg-success">Eligibil pentru reducere 2%</span>';
+                                }
+                            } else {
+                                echo 'Fără rezervări';
+                            }
+                            ?>
+                        </td>
+                        <td><?php echo $client['este_client_top'] ? 'Client Top' : 'Standard'; ?></td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="edit_client.php?id=<?php echo $client['id']; ?>" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="javascript:void(0)" 
+                                   onclick="if(confirm('Sigur doriți să ștergeți acest client?')) window.location.href='delete_client.php?id=<?php echo $client['id']; ?>'"
+                                   class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+
+        <!-- Tabel Clienți cu Rezervări Anulate -->
+        <?php if ($result_anulate->num_rows > 0): ?>
+            <h4 class="mt-5 mb-3">Clienți cu Rezervări Anulate</h4>
+            <table class="table table-secondary">
+                <thead>
+                    <tr>
+                        <th>Nume</th>
+                        <th>Email</th>
+                        <th>Telefon</th>
+                        <th>Rezervări Anulate</th>
+                        <th>Status</th>
+                        <th>Acțiuni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($client = $result_anulate->fetch_assoc()): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($client['nume'] . ' ' . $client['prenume']); ?></td>
+                            <td><?php echo htmlspecialchars($client['email']); ?></td>
+                            <td><?php echo htmlspecialchars($client['telefon']); ?></td>
+                            <td>
+                                <?php echo $client['numar_rezervari_anulate']; ?> rezervări anulate<br>
+                                <small class="text-muted">
+                                    Ultima anulare: <?php echo date('d.m.Y', strtotime(explode(',', $client['ultima_anulare'])[0])); ?>
+                                </small>
+                            </td>
+                            <td><?php echo $client['este_client_top'] ? 'Client Top' : 'Standard'; ?></td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="edit_client.php?id=<?php echo $client['id']; ?>" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="javascript:void(0)" 
+                                       onclick="if(confirm('Sigur doriți să ștergeți acest client?')) window.location.href='delete_client.php?id=<?php echo $client['id']; ?>'"
+                                       class="btn btn-sm btn-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
