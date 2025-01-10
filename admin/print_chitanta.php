@@ -59,25 +59,40 @@ $pret_transport = $rezervare['pret_transport_per_persoana'] *
 
 $subtotal = $pret_cazare_adulti + $pret_cazare_copii + $pret_transport;
 
-// Calculăm reducerile în ordinea corectă
-$suma_dupa_reducere = $subtotal;
+// Verificăm dacă clientul era client top la momentul rezervării
+$sql_verificare = "SELECT COUNT(*) as rezervari_anterioare 
+                  FROM rezervari 
+                  WHERE client_id = ? 
+                  AND data_creare < ? 
+                  AND status_plata != 'anulata'";
+$stmt = $conn->prepare($sql_verificare);
+$stmt->bind_param("is", $rezervare['client_id'], $rezervare['data_creare']);
+$stmt->execute();
+$result = $stmt->get_result();
+$row = $result->fetch_assoc();
+$era_client_top = ($row['rezervari_anterioare'] >= 2);
 
-// 1. Mai întâi reducerea de 5% pentru plată integrală
+// Calculăm reducerile
+$suma_intermediara = $subtotal;
+$reducere_client_top = 0;
 $reducere_plata_integrala = 0;
-if ($rezervare['status_plata'] == 'integral') {
-    $reducere_plata_integrala = $subtotal * 0.05;
-    $suma_dupa_reducere = $subtotal - $reducere_plata_integrala;
+
+// Mai întâi calculăm reducerea de client top
+if ($era_client_top) {  // Folosim era_client_top în loc de este_client_top
+    $reducere_client_top = $subtotal * 0.02;
+    $suma_intermediara = $subtotal - $reducere_client_top;
 }
 
-// 2. Apoi reducerea de 2% pentru client top din suma rămasă
-$reducere_client_fidel = 0;
-if ($rezervare['este_client_top']) {
-    $reducere_client_fidel = $suma_dupa_reducere * 0.02;
-    $suma_dupa_reducere -= $reducere_client_fidel;
+// Apoi calculăm reducerea pentru plata integrală sau avans
+if ($rezervare['status_plata'] == 'integral') {
+    $reducere_plata_integrala = $suma_intermediara * 0.05;
+    $suma_intermediara -= $reducere_plata_integrala;
+} elseif ($rezervare['status_plata'] == 'avans') {
+    $suma_intermediara = $suma_intermediara * 0.2;
 }
 
 // Total final
-$total_final = $suma_dupa_reducere;
+$total_final = $suma_intermediara;
 ?>
 
 <!DOCTYPE html>
@@ -180,10 +195,10 @@ $total_final = $suma_dupa_reducere;
                 </tr>
                 <?php endif; ?>
 
-                <?php if ($reducere_client_fidel > 0): ?>
+                <?php if ($reducere_client_top > 0): ?>
                 <tr class="text-success">
-                    <td>Reducere client fidel (2%):</td>
-                    <td class="text-end">-<?php echo number_format($reducere_client_fidel, 2); ?> €</td>
+                    <td>Reducere client top (2%):</td>
+                    <td class="text-end">-<?php echo number_format($reducere_client_top, 2); ?> €</td>
                 </tr>
                 <?php endif; ?>
 

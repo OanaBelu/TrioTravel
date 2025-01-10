@@ -78,7 +78,7 @@ $luna_selectata = isset($_GET['luna']) ? $_GET['luna'] : '';
                     <div class="col-md-4">
                         <label class="form-label">Luna (opțional)</label>
                         <select name="luna" class="form-select">
-                            <option value="">Toate lunile</option>
+                            <option value="">Toate lunilele</option>
                             <?php foreach ($luni as $nr => $nume): ?>
                                 <option value="<?= $nr ?>" <?= $nr == $luna_selectata ? 'selected' : '' ?>>
                                     <?= $nume ?>

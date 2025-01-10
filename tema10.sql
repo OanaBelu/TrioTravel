@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3305
--- Generation Time: Jan 10, 2025 at 03:58 AM
+-- Generation Time: Jan 10, 2025 at 12:52 PM
 -- Server version: 8.3.0
 -- PHP Version: 8.3.6
 
@@ -42,7 +42,6 @@ CREATE DEFINER=`root`@`localhost` FUNCTION `calculeaza_pret_total` (`pret_cazare
         SELECT pret_per_persoana INTO pret_transport
         FROM optiuni_transport_excursii
         WHERE id = optiune_transport_id;
-        -- Transport: toți plătesc 100%
         SET total_transport = COALESCE(pret_transport, 0) * (adulti + copii);
     ELSE
         SET total_transport = 0;
@@ -51,16 +50,16 @@ CREATE DEFINER=`root`@`localhost` FUNCTION `calculeaza_pret_total` (`pret_cazare
     -- Calculează totalul inițial
     SET total = total_cazare + total_transport;
     
-    -- Aplică reducerea pentru client top (2%)
+    -- Aplică reducerea pentru client top (2%) ÎNAINTE de alte reduceri
     IF este_client_top THEN
         SET total = total * 0.98;
     END IF;
     
-    -- Calculează suma de plată în funcție de tipul plății
+    -- Apoi aplică reducerile pentru tipul de plată
     IF tip_plata = 'integral' THEN
-        SET total = total * 0.95; -- reducere 5% pentru plata integrală
+        SET total = total * 0.95;
     ELSEIF tip_plata = 'avans' THEN
-        SET total = (total_cazare + total_transport) * 0.2; -- 20% din prețul original
+        SET total = total * 0.2;
     END IF;
     
     RETURN ROUND(total, 2);
@@ -85,7 +84,7 @@ CREATE TABLE IF NOT EXISTS `chitante` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   KEY `fk_chitante_rezervari` (`rezervare_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=87 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=93 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `chitante`
@@ -102,7 +101,10 @@ INSERT INTO `chitante` (`id`, `rezervare_id`, `suma`, `tip_operatie`, `data_plat
 (83, 128, 2090.00, 'plata', '2025-01-10 03:46:36', '2025-01-10 03:46:36'),
 (84, 129, 200.00, 'plata', '2025-01-10 03:53:45', '2025-01-10 03:53:45'),
 (85, 130, 655.50, 'plata', '2025-01-10 03:55:04', '2025-01-10 03:55:04'),
-(86, 131, 845.50, 'plata', '2025-01-10 03:55:55', '2025-01-10 03:55:55');
+(86, 131, 845.50, 'plata', '2025-01-10 03:55:55', '2025-01-10 03:55:55'),
+(87, 132, 215.60, 'plata', '2025-01-10 11:36:28', '2025-01-10 11:36:28'),
+(88, 133, 1024.10, 'plata', '2025-01-10 11:45:46', '2025-01-10 11:45:46'),
+(89, 134, 1024.10, 'plata', '2025-01-10 11:52:53', '2025-01-10 11:52:53');
 
 --
 -- Triggers `chitante`
@@ -177,7 +179,7 @@ CREATE TABLE IF NOT EXISTS `clienti` (
   `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `numar_identitate` (`numar_identitate`)
-) ENGINE=MyISAM AUTO_INCREMENT=118 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=121 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `clienti`
@@ -403,7 +405,7 @@ CREATE TABLE IF NOT EXISTS `participanti` (
   PRIMARY KEY (`id`),
   KEY `idx_participanti_tip` (`tip_participant`),
   KEY `fk_participanti_rezervari` (`rezervare_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=103 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=109 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `participanti`
@@ -420,7 +422,10 @@ INSERT INTO `participanti` (`id`, `rezervare_id`, `nume`, `prenume`, `email`, `t
 (43, 37, 'Popa', 'Ana', 'ana.popa@example.com', '0722012345', 'TM009012', 'adult'),
 (100, 129, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', ''),
 (101, 130, 'Blandi ', 'Ana', 'ana@a.com', '0744441111', 'AB009019', ''),
-(102, 131, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', '');
+(102, 131, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', ''),
+(103, 132, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', ''),
+(104, 133, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', ''),
+(105, 134, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', '');
 
 -- --------------------------------------------------------
 
@@ -449,7 +454,7 @@ CREATE TABLE IF NOT EXISTS `rezervari` (
   KEY `fk_rezervari_clienti` (`client_id`),
   KEY `fk_rezervari_excursii` (`excursie_id`),
   KEY `fk_rezervari_transport` (`transport_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=132 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=138 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `rezervari`
@@ -462,6 +467,9 @@ INSERT INTO `rezervari` (`id`, `client_id`, `excursie_id`, `numar_adulti`, `numa
 (35, 41, 52, 1, 0, 1805.00, 'integral', 3610.00, 54, 1900.00, 0.00, '2025-01-08 19:31:32', '2025-01-08 19:31:32'),
 (47, 59, 35, 1, 1, 1268.25, 'integral', 3170.63, 38, 1335.00, 0.00, '2025-01-08 22:30:01', '2025-01-08 22:30:01'),
 (131, 117, 35, 1, 0, 845.50, 'integral', 845.50, 38, 890.00, 0.00, '2025-01-10 03:55:55', NULL),
+(132, 117, 29, 1, 0, 1078.00, 'avans', 215.60, 31, 1000.00, 100.00, '2025-01-10 11:36:28', '2025-01-10 11:42:15'),
+(133, 117, 29, 1, 0, 1078.00, 'integral', 1024.10, 31, 1000.00, 100.00, '2025-01-10 11:45:46', NULL),
+(134, 117, 29, 1, 0, 1078.00, 'integral', 1024.10, 31, 1000.00, 100.00, '2025-01-10 11:52:53', NULL),
 (130, 117, 32, 1, 0, 655.50, 'integral', 655.50, 35, 590.00, 100.00, '2025-01-10 03:55:04', NULL),
 (129, 117, 31, 1, 0, 1000.00, 'avans', 200.00, 34, 1000.00, 0.00, '2025-01-10 03:53:45', NULL);
 
