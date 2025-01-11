@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3305
--- Generation Time: Jan 10, 2025 at 12:52 PM
+-- Generation Time: Jan 11, 2025 at 07:21 PM
 -- Server version: 8.3.0
 -- PHP Version: 8.3.6
 
@@ -20,8 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `tema10`
 --
-CREATE DATABASE IF NOT EXISTS `tema10` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE `tema10`;
 
 DELIMITER $$
 --
@@ -84,27 +82,25 @@ CREATE TABLE IF NOT EXISTS `chitante` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   KEY `fk_chitante_rezervari` (`rezervare_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=93 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=161 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `chitante`
 --
 
 INSERT INTO `chitante` (`id`, `rezervare_id`, `suma`, `tip_operatie`, `data_plata`, `creat_la`) VALUES
-(45, 47, 1902.38, 'plata', '2025-01-08 22:30:01', '2025-01-08 22:30:01'),
-(37, 39, 2137.50, 'plata', '2025-01-08 21:05:45', '2025-01-08 21:05:45'),
-(36, 38, 2048.20, 'plata', '2025-01-08 20:34:04', '2025-01-08 20:34:04'),
-(34, 36, 262.00, 'plata', '2025-01-08 19:41:06', '2025-01-08 19:41:06'),
-(33, 35, 1805.00, 'plata', '2025-01-08 19:31:32', '2025-01-08 19:31:32'),
-(81, 126, 4.00, 'plata', '2025-01-10 03:44:34', '2025-01-10 03:44:34'),
-(82, 127, 655.50, 'plata', '2025-01-10 03:45:34', '2025-01-10 03:45:34'),
-(83, 128, 2090.00, 'plata', '2025-01-10 03:46:36', '2025-01-10 03:46:36'),
-(84, 129, 200.00, 'plata', '2025-01-10 03:53:45', '2025-01-10 03:53:45'),
-(85, 130, 655.50, 'plata', '2025-01-10 03:55:04', '2025-01-10 03:55:04'),
-(86, 131, 845.50, 'plata', '2025-01-10 03:55:55', '2025-01-10 03:55:55'),
-(87, 132, 215.60, 'plata', '2025-01-10 11:36:28', '2025-01-10 11:36:28'),
-(88, 133, 1024.10, 'plata', '2025-01-10 11:45:46', '2025-01-10 11:45:46'),
-(89, 134, 1024.10, 'plata', '2025-01-10 11:52:53', '2025-01-10 11:52:53');
+(158, 201, 178.00, 'plata', '2025-01-11 18:11:50', '2025-01-11 18:11:50'),
+(159, 202, 1919.00, 'plata', '2025-01-11 19:07:51', '2025-01-11 19:07:51'),
+(160, 203, 138.00, 'plata', '2025-01-11 19:10:48', '2025-01-11 19:10:48'),
+(157, 200, 1804.05, 'plata', '2025-01-11 18:10:08', '2025-01-11 18:10:08'),
+(156, 199, 1244.50, 'plata', '2025-01-11 18:09:43', '2025-01-11 18:09:43'),
+(155, 198, 655.50, 'plata', '2025-01-11 18:09:12', '2025-01-11 18:09:12'),
+(154, 197, 19.00, 'plata', '2025-01-11 18:08:24', '2025-01-11 18:08:24'),
+(153, 196, 579.70, 'plata', '2025-01-11 18:07:27', '2025-01-11 18:07:27'),
+(152, 195, 1919.00, 'plata', '2025-01-11 18:06:11', '2025-01-11 18:06:11'),
+(151, 194, 950.00, 'plata', '2025-01-11 18:04:35', '2025-01-11 18:04:35'),
+(150, 193, 138.00, 'plata', '2025-01-11 18:04:00', '2025-01-11 18:04:00'),
+(149, 192, 1045.00, 'plata', '2025-01-11 18:03:44', '2025-01-11 18:03:44');
 
 --
 -- Triggers `chitante`
@@ -159,7 +155,8 @@ CREATE TABLE IF NOT EXISTS `circuite` (
 
 INSERT INTO `circuite` (`excursie_id`, `descriere_traseu`, `vizite_incluse`, `creat_la`) VALUES
 (30, 'Bucuresti - Franta - Germania', 'Muzeul Luvru, Arcul de Triumph', '2025-01-07 20:24:42'),
-(36, 'Istanbul: Orasul ce leaga Europa de Asia, cu comori culturale precum Hagia Sophia, Palatul Topkapi si Moscheea Albastra.\r\nAnkara: Capitala Turciei, unde poti vizita Mausoleul lui Atatürk si Muzeul Civilizatiilor Anatoliene.\r\nCappadocia: Peisajele fantastice si casele sapate in stanca, faimoase pentru zborurile cu balonul cu aer cald.', 'Istanbul: Hagia Sophia, Palatul Topkapi, Moscheea Albastra si Marele Bazar.\r\nAnkara: Mausoleul lui Atatürk si Muzeul Civilizatiilor Anatoliene.\r\nCappadocia: Zbor cu balonul cu aer cald si explorarea vaii Goreme.', '2025-01-07 22:11:58');
+(36, 'Istanbul: Orasul ce leaga Europa de Asia, cu comori culturale precum Hagia Sophia, Palatul Topkapi si Moscheea Albastra.\r\nAnkara: Capitala Turciei, unde poti vizita Mausoleul lui Atatürk si Muzeul Civilizatiilor Anatoliene.\r\nCappadocia: Peisajele fantastice si casele sapate in stanca, faimoase pentru zborurile cu balonul cu aer cald.', 'Hagia Sophia, Moscheea Albastra \r\n', '2025-01-07 22:11:58'),
+(34, 'Bucuresti-Roma', 'Colosseum', '2025-01-11 13:48:15');
 
 -- --------------------------------------------------------
 
@@ -179,19 +176,23 @@ CREATE TABLE IF NOT EXISTS `clienti` (
   `creat_la` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `numar_identitate` (`numar_identitate`)
-) ENGINE=MyISAM AUTO_INCREMENT=121 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=176 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `clienti`
 --
 
 INSERT INTO `clienti` (`id`, `prenume`, `nume`, `email`, `telefon`, `numar_identitate`, `este_client_top`, `creat_la`) VALUES
-(59, 'Gabi', 'Stefan', 'gabriela.stefan@example.com', '0788890123', 'TZ456129', 0, '2025-01-08 22:30:01'),
-(58, 'Gabriela', 'Stefan', 'gabriela.stefan@example.com', '0788890123', 'TZ456123', 0, '2025-01-08 22:30:01'),
-(41, 'Ana', 'Popa', 'ana.popa@example.com', '0722012345', 'TM009012', 1, '2025-01-08 19:31:32'),
-(42, 'Marius', 'Stan', 'mariu.stan@example.com', '0711901234', 'TM456789', 0, '2025-01-08 21:05:45'),
-(43, 'Alex', 'Stan', 'mariu.stan@example.com', '0711901234', 'TM454489', 0, '2025-01-08 21:05:45'),
-(117, 'Ana', 'Blandi ', 'ana@a.com', '0723981111', 'AB009019', 1, '2025-01-10 03:53:45');
+(175, 'Mihai', 'Molnar', 'abcd@acd.com', '0722222378', 'BH001012', 0, '2025-01-11 19:10:48'),
+(174, 'Copil', 'Ion', 'ion@as.com', '0744441145', 'NT001029', 0, '2025-01-11 19:07:51'),
+(173, 'Adult', 'Ion', 'ion@as.com', '0744441145', 'NT001019', 0, '2025-01-11 18:11:50'),
+(172, 'Top', 'Another', 'top@gmail.com', '0722101010', 'HD001010', 1, '2025-01-11 18:09:12'),
+(171, 'Anulare', 'Pop', 'pop@gmail.com', '0762012345', 'AA004012', 0, '2025-01-11 18:08:23'),
+(170, 'Copil', 'Kiss', 'kiss@a.com', '0722225778', 'TM004012', 0, '2025-01-11 18:07:27'),
+(166, 'Ana', 'Blandi ', 'ana@a.com', '0723981111', 'AB009019', 1, '2025-01-11 18:03:44'),
+(167, 'Adult', 'Popa', 'a@gmail.com', '0744448888', '1890312345725', 0, '2025-01-11 18:06:11'),
+(168, 'Copil', 'Popa', 'a@gmail.com', '0744448888', '6090312345725', 0, '2025-01-11 18:06:11'),
+(169, 'Adult', 'Kiss', 'kiss@a.com', '0722225778', 'TM004011', 0, '2025-01-11 18:07:27');
 
 -- --------------------------------------------------------
 
@@ -260,10 +261,10 @@ CREATE TABLE IF NOT EXISTS `excursii` (
 
 INSERT INTO `excursii` (`id`, `tip`, `oferta_speciala`, `tip_masa`, `sezon_id`, `nume`, `descriere`, `data_inceput`, `data_sfarsit`, `pret_cazare_per_persoana`, `creat_la`, `poza1`, `poza2`, `status`, `tip_cazare_id`, `locatie_id`, `numar_nopti`) VALUES
 (29, 'Sejur', '', 'All inclusive', 3, 'Vacanta in Santorini', 'Santorini, o bijuterie a Marii Egee, te asteapta cu peisaje de neuitat, apusuri spectaculoase și arhitectura sa alb-albastra iconica. Bucura-te de plajele unice din Santorini, savureaza gastronomia locala si descopera istoria fascinanta a insulei intr-o vacanta de vis.               ', '2025-01-08', '2025-01-11', 1000.00, '2025-01-07 20:22:06', 'santo1.jpg', 'santo2.jpg', 'activ', 1, 6, 3),
-(30, 'Circuit', 'revelion', 'Demipensiune', 2, 'Franta Romantica', 'Experimenteaza farmecul atemporal al Frantei intr-un circuit romantic de neuitat. De la strazile pline de viata din Paris si castelele din Valea Loarei, la vinurile fine din Bordeaux si frumusetea de pe Coasta de Azur, fiecare destinatie promite momente magice si amintiri pretioase.', '2025-01-17', '2025-01-20', 2000.00, '2025-01-07 20:24:42', 'franta1.jpg', 'franta2.jpg', 'activ', 1, 9, 3),
+(30, 'Circuit', '', 'Demipensiune', 2, 'Franta Romantica', 'Experimenteaza farmecul atemporal al Frantei intr-un circuit romantic de neuitat. De la strazile pline de viata din Paris si castelele din Valea Loarei, la vinurile fine din Bordeaux si frumusetea de pe Coasta de Azur, fiecare destinatie promite momente magice si amintiri pretioase.', '2025-01-17', '2025-01-20', 1799.00, '2025-01-07 20:24:42', 'franta1.jpg', 'franta2.jpg', 'activ', 1, 9, 3),
 (31, 'Croaziera', 'paste', 'All inclusive', 1, 'Croaziera Mediterana', 'Descopera frumusetile Marii Mediterane intr-o croaziera de vis. Viziteaza destinatii exotice precum Italia, Grecia, Spania si Turcia, bucurandu-te de peisaje pitoresti, situri istorice si cultura vibranta. Relaxare, explorare si aventura te asteapta la fiecare oprire a navei.                     ', '2025-01-09', '2025-01-16', 1000.00, '2025-01-07 20:26:27', 'medit2.jpg', 'medit1.jpg', 'activ', 1, 13, 7),
 (32, 'Sejur', 'paste', 'All inclusive', 1, 'Vacanta in Creta', 'Descopera magia Cretei, cea mai mare insula a Greciei, unde traditiile autentice se impletesc cu peisaje naturale spectaculoase. Relaxeaza-te pe plaje aurii, exploreaza siturile arheologice antice si bucura-te de ospitalitatea localnicilor intr-un sejur de neuitat.', '2025-01-10', '2025-01-14', 590.00, '2025-01-07 20:30:02', 'creta1.jpg', 'creta2.jpg', 'activ', 1, 6, 4),
-(33, 'Sejur', 'revelion', 'Demipensiune', 1, 'Barcelona City Break', 'Plonjeaza in vibranta capitala a Cataloniei! Barcelona te asteapta cu arhitectura sa emblematica, bulevarde cosmopolite si plaje însorite. Viziteaza capodoperele lui Gaudí, relaxeaza-te in Parcul Guell si gusta tapas-uri delicioase intr-o atmosfera plina de viata.              ', '2025-01-08', '2025-01-10', 20.00, '2025-01-07 20:33:56', 'barcelona1.jpg', 'barcelona2.jpg', 'activ', 1, 1, 2),
+(33, 'Sejur', 'revelion', 'Demipensiune', 1, 'Barcelona City Break', 'Plonjeaza in vibranta capitala a Cataloniei! Barcelona te asteapta cu arhitectura sa emblematica, bulevarde cosmopolite si plaje insorite. Viziteaza capodoperele lui Gaudi, relaxeaza-te in Parcul Guell si gusta tapas-uri delicioase intr-o atmosfera plina de viata.              ', '2025-01-08', '2025-01-10', 20.00, '2025-01-07 20:33:56', 'barcelona1.jpg', 'barcelona2.jpg', 'activ', 1, 1, 2),
 (34, 'Circuit', '1mai', 'Demipensiune', 1, 'Turul Italiei', 'Descopera farmecul Italiei intr-un circuit fascinant prin cele mai iconice destinatii ale Peninsulei Italice. Exploreaza orase istorice, situri culturale de renume mondial si peisaje de vis, de la romanticele strazi din Venetia la ruinele antice din Roma. Gusta deliciile gastronomiei italiene, admira arta si arhitectura si bucura-te de ospitalitatea locala intr-o calatorie memorabila.', '2025-05-01', '2025-05-05', 500.00, '2025-01-07 21:46:55', 'italia1.jpg', 'italia2.jpg', 'activ', 3, 3, 4),
 (35, 'Croaziera', '', 'Demipensiune', 4, 'Croaziera Insulele Grecesti', 'Porneste intr-o aventura captivanta prin splendidele insule ale Greciei. Viziteaza destinatii de vis, fiecare cu farmecul si istoria sa unica. Bucura-te de ape cristaline, peisaje pitoresti si ospitalitatea locala pe parcursul acestei croaziere de neuitat.                        ', '2025-05-10', '2025-05-15', 890.00, '2025-01-07 21:53:05', 'maldive1.jpg', 'creta1.jpg', 'activ', 1, 1, 5),
 (36, 'Circuit', '', 'All inclusive', 3, 'Turcia - Comorile Anatoliei', '                            Descopera farmecul istoric si cultural al Turciei intr-un circuit fascinant ce te va purta prin cele mai impresionante destinatii ale acestei tari. Exploreaza orase pline de viata, situri istorice si peisaje naturale uluitoare, bucurandu-te de ospitalitatea si gastronomia locala.                        ', '2025-09-01', '2025-09-05', 1200.00, '2025-01-07 22:11:58', 'turcia1.jpg', 'turcia2.jpg', 'activ', 5, 14, 4),
@@ -350,7 +351,7 @@ CREATE TABLE IF NOT EXISTS `optiuni_transport_excursii` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `excursie_id` (`excursie_id`,`tip_transport`)
-) ENGINE=MyISAM AUTO_INCREMENT=56 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=57 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `optiuni_transport_excursii`
@@ -360,7 +361,7 @@ INSERT INTO `optiuni_transport_excursii` (`id`, `excursie_id`, `tip_transport`, 
 (35, 32, 'Autocar', 100.00, '1', '2025-01-07 20:30:02'),
 (36, 33, 'Transport propriu', 0.00, 'Transport in regim propriu', '2025-01-07 20:33:56'),
 (34, 31, 'Transport propriu', 0.00, 'Transport in regim propriu', '2025-01-07 20:26:27'),
-(33, 30, 'Avion', 200.00, 'Aeroportul henri coanda', '2025-01-07 20:24:42'),
+(56, 30, 'Autocar', 100.00, 'Autocar cu aer conditionat si TV', '2025-01-11 14:18:46'),
 (32, 29, 'Transport propriu', 0.00, 'Transport in regim propriu', '2025-01-07 20:22:06'),
 (30, 28, 'Transport propriu', 0.00, 'Transport in regim propriu', '2025-01-07 19:56:02'),
 (31, 29, 'Autocar', 100.00, 'De la gara de nord', '2025-01-07 20:22:06'),
@@ -405,27 +406,28 @@ CREATE TABLE IF NOT EXISTS `participanti` (
   PRIMARY KEY (`id`),
   KEY `idx_participanti_tip` (`tip_participant`),
   KEY `fk_participanti_rezervari` (`rezervare_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=109 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=195 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `participanti`
 --
 
 INSERT INTO `participanti` (`id`, `rezervare_id`, `nume`, `prenume`, `email`, `telefon`, `numar_identitate`, `tip_participant`) VALUES
-(62, 47, 'Stefan', 'Gabi', 'gabriela.stefan@example.com', '0788890123', 'TZ456129', 'copil'),
-(61, 47, 'Stefan', 'Gabriela', 'gabriela.stefan@example.com', '0788890123', 'TZ456123', 'adult'),
-(45, 39, 'Stan', 'Marius', 'mariu.stan@example.com', '0711901234', 'TM456789', 'adult'),
-(46, 39, 'Stan', 'Alex', 'mariu.stan@example.com', '0711901234', 'TM454489', 'copil'),
-(44, 38, 'Popa', 'Ana', 'ana.popa@example.com', '0722012345', 'TM009012', 'adult'),
-(41, 35, 'Popa', 'Ana', 'ana.popa@example.com', '0722012345', 'TM009012', 'adult'),
-(42, 36, 'Popa', 'Ana', 'ana.popa@example.com', '0722012345', 'TM009012', 'adult'),
-(43, 37, 'Popa', 'Ana', 'ana.popa@example.com', '0722012345', 'TM009012', 'adult'),
-(100, 129, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', ''),
-(101, 130, 'Blandi ', 'Ana', 'ana@a.com', '0744441111', 'AB009019', ''),
-(102, 131, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', ''),
-(103, 132, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', ''),
-(104, 133, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', ''),
-(105, 134, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', '');
+(194, 203, 'Molnar', 'Mihai', 'abcd@acd.com', '0722222378', 'BH001012', ''),
+(193, 202, 'Ion', 'Copil', 'ion@as.com', '0744441145', 'NT001029', 'copil'),
+(192, 202, 'Ion', 'Adult', 'ion@as.com', '0744441145', 'NT001019', ''),
+(191, 201, 'Ion', 'Adult', 'ion@as.com', '0744441911', 'NT001019', ''),
+(190, 200, 'Another', 'Top', 'top@gmail.com', '0722101010', 'HD001010', ''),
+(189, 199, 'Another', 'Top', 'top@gmail.com', '0722101010', 'HD001010', ''),
+(188, 198, 'Another', 'Top', 'top@gmail.com', '0722101010', 'HD001010', ''),
+(184, 195, 'Popa', 'Copil', 'a@gmail.com', '0744448888', '6090312345725', 'copil'),
+(185, 196, 'Kiss', 'Adult', 'kiss@a.com', '0722225778', 'TM004011', ''),
+(186, 196, 'Kiss', 'Copil', 'kiss@a.com', '0722225778', 'TM004012', 'copil'),
+(187, 197, 'Pop', 'Anulare', 'pop@gmail.com', '0762012345', 'AA004012', ''),
+(180, 192, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', ''),
+(181, 193, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', ''),
+(182, 194, 'Blandi ', 'Ana', 'ana@a.com', '0723981111', 'AB009019', ''),
+(183, 195, 'Popa', 'Adult', 'a@gmail.com', '0744448888', '1890312345725', '');
 
 -- --------------------------------------------------------
 
@@ -454,24 +456,25 @@ CREATE TABLE IF NOT EXISTS `rezervari` (
   KEY `fk_rezervari_clienti` (`client_id`),
   KEY `fk_rezervari_excursii` (`excursie_id`),
   KEY `fk_rezervari_transport` (`transport_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=138 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=204 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `rezervari`
 --
 
 INSERT INTO `rezervari` (`id`, `client_id`, `excursie_id`, `numar_adulti`, `numar_copii`, `pret_total`, `status_plata`, `suma_plata`, `transport_id`, `pret_cazare`, `pret_transport`, `data_creare`, `data_modificare`) VALUES
-(38, 41, 30, 1, 0, 2090.00, 'integral', 4138.20, 33, 2000.00, 200.00, '2025-01-08 20:34:04', '2025-01-08 20:34:04'),
-(39, 42, 31, 1, 1, 1425.00, 'integral', 3562.50, 34, 1500.00, 0.00, '2025-01-08 21:05:45', '2025-01-08 21:05:45'),
-(36, 41, 36, 1, 0, 1310.00, 'avans', 524.00, 39, 1200.00, 110.00, '2025-01-08 19:41:06', '2025-01-08 19:41:06'),
-(35, 41, 52, 1, 0, 1805.00, 'integral', 3610.00, 54, 1900.00, 0.00, '2025-01-08 19:31:32', '2025-01-08 19:31:32'),
-(47, 59, 35, 1, 1, 1268.25, 'integral', 3170.63, 38, 1335.00, 0.00, '2025-01-08 22:30:01', '2025-01-08 22:30:01'),
-(131, 117, 35, 1, 0, 845.50, 'integral', 845.50, 38, 890.00, 0.00, '2025-01-10 03:55:55', NULL),
-(132, 117, 29, 1, 0, 1078.00, 'avans', 215.60, 31, 1000.00, 100.00, '2025-01-10 11:36:28', '2025-01-10 11:42:15'),
-(133, 117, 29, 1, 0, 1078.00, 'integral', 1024.10, 31, 1000.00, 100.00, '2025-01-10 11:45:46', NULL),
-(134, 117, 29, 1, 0, 1078.00, 'integral', 1024.10, 31, 1000.00, 100.00, '2025-01-10 11:52:53', NULL),
-(130, 117, 32, 1, 0, 655.50, 'integral', 655.50, 35, 590.00, 100.00, '2025-01-10 03:55:04', NULL),
-(129, 117, 31, 1, 0, 1000.00, 'avans', 200.00, 34, 1000.00, 0.00, '2025-01-10 03:53:45', NULL);
+(203, 175, 32, 1, 0, 690.00, 'avans', 138.00, 35, 590.00, 100.00, '2025-01-11 19:10:48', NULL),
+(202, 174, 36, 1, 1, 1919.00, 'integral', 1919.00, 39, 1800.00, 220.00, '2025-01-11 19:07:51', NULL),
+(201, 173, 35, 1, 0, 890.00, 'anulata', 178.00, 38, 890.00, 0.00, '2025-01-11 18:11:50', '2025-01-11 18:12:01'),
+(200, 172, 30, 1, 0, 1804.05, 'integral', 1804.05, 56, 1799.00, 100.00, '2025-01-11 18:10:08', NULL),
+(199, 172, 36, 1, 0, 1244.50, 'integral', 1244.50, 39, 1200.00, 110.00, '2025-01-11 18:09:43', NULL),
+(198, 172, 32, 1, 0, 655.50, 'integral', 655.50, 35, 590.00, 100.00, '2025-01-11 18:09:12', NULL),
+(197, 171, 33, 1, 0, 19.00, 'integral', 19.00, 36, 20.00, 0.00, '2025-01-11 18:08:23', NULL),
+(196, 170, 30, 1, 1, 2898.50, 'avans', 579.70, 56, 2698.50, 200.00, '2025-01-11 18:07:27', NULL),
+(195, 167, 36, 1, 1, 1919.00, 'integral', 1919.00, 39, 1800.00, 220.00, '2025-01-11 18:06:11', NULL),
+(194, 166, 31, 1, 0, 950.00, 'integral', 950.00, 34, 1000.00, 0.00, '2025-01-11 18:04:35', NULL),
+(193, 166, 32, 1, 0, 690.00, 'avans', 138.00, 35, 590.00, 100.00, '2025-01-11 18:04:00', NULL),
+(192, 166, 29, 1, 0, 1045.00, 'integral', 1045.00, 31, 1000.00, 100.00, '2025-01-11 18:03:44', NULL);
 
 --
 -- Triggers `rezervari`

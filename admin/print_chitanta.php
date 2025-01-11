@@ -31,9 +31,17 @@ if (isset($_GET['chitanta_id'])) {
 // Preluăm toate datele necesare pentru chitanță
 $sql = "SELECT r.*, 
         e.nume as nume_excursie, 
+        e.pret_cazare_per_persoana,
         e.data_inceput, 
         e.data_sfarsit,
-        CONCAT(c.prenume, ' ', c.nume) as nume_client,
+        COALESCE(
+            (SELECT CONCAT(p.prenume, ' ', p.nume)
+             FROM participanti p 
+             WHERE p.rezervare_id = r.id 
+             ORDER BY p.id ASC
+             LIMIT 1),
+            CONCAT(c.prenume, ' ', c.nume)
+        ) as nume_client,
         c.email,
         c.telefon,
         c.este_client_top,
@@ -50,49 +58,59 @@ $stmt->bind_param("i", $rezervare_id);
 $stmt->execute();
 $rezervare = $stmt->get_result()->fetch_assoc();
 
-// Calculăm totalurile
-$pret_cazare_adulti = $rezervare['pret_cazare'] * $rezervare['numar_adulti'];
-$pret_cazare_copii = $rezervare['numar_copii'] > 0 ? 
-    ($rezervare['pret_cazare'] * $rezervare['numar_copii'] * 0.5) : 0; // 50% reducere la cazare copii
-$pret_transport = $rezervare['pret_transport_per_persoana'] * 
-    ($rezervare['numar_adulti'] + $rezervare['numar_copii']); // transport full price pentru toți
+// După preluarea datelor rezervării, adăugăm verificarea pentru client top
+$sql_istoric = "SELECT 
+    (SELECT COUNT(*) >= 2
+     FROM rezervari r_anterior
+     WHERE r_anterior.client_id = r.client_id 
+     AND r_anterior.data_creare < r.data_creare
+     AND r_anterior.status_plata != 'anulata'
+    ) as era_client_top
+FROM rezervari r
+WHERE r.id = ?";
 
+$stmt = $conn->prepare($sql_istoric);
+$stmt->bind_param("i", $rezervare_id);
+$stmt->execute();
+$result_istoric = $stmt->get_result();
+$istoric = $result_istoric->fetch_assoc();
+
+// Calculăm totalurile
+$pret_cazare_adult = $rezervare['pret_cazare_per_persoana'];
+$pret_cazare_adulti = $pret_cazare_adult * $rezervare['numar_adulti'];
+$pret_cazare_copii = $rezervare['numar_copii'] > 0 ? 
+    ($pret_cazare_adult * 0.5 * $rezervare['numar_copii']) : 0;
+
+// Calculăm prețul transportului
+$pret_transport = 0;
+if ($rezervare['transport_id']) {
+    $pret_transport = $rezervare['pret_transport_per_persoana'] * 
+        ($rezervare['numar_adulti'] + $rezervare['numar_copii']);
+}
+
+// Inițializăm variabilele pentru reduceri
+$reducere_plata_integrala = 0;
+$reducere_client_top = 0;
+
+// Calculăm subtotalul
 $subtotal = $pret_cazare_adulti + $pret_cazare_copii + $pret_transport;
 
-// Verificăm dacă clientul era client top la momentul rezervării
-$sql_verificare = "SELECT COUNT(*) as rezervari_anterioare 
-                  FROM rezervari 
-                  WHERE client_id = ? 
-                  AND data_creare < ? 
-                  AND status_plata != 'anulata'";
-$stmt = $conn->prepare($sql_verificare);
-$stmt->bind_param("is", $rezervare['client_id'], $rezervare['data_creare']);
-$stmt->execute();
-$result = $stmt->get_result();
-$row = $result->fetch_assoc();
-$era_client_top = ($row['rezervari_anterioare'] >= 2);
-
-// Calculăm reducerile
-$suma_intermediara = $subtotal;
-$reducere_client_top = 0;
-$reducere_plata_integrala = 0;
-
-// Mai întâi calculăm reducerea de client top
-if ($era_client_top) {  // Folosim era_client_top în loc de este_client_top
+// Aplicăm reducerea de client top doar dacă era client top la momentul rezervării
+if ($istoric['era_client_top']) {
     $reducere_client_top = $subtotal * 0.02;
-    $suma_intermediara = $subtotal - $reducere_client_top;
+    $suma_dupa_reducere_top = $subtotal - $reducere_client_top;
+} else {
+    $suma_dupa_reducere_top = $subtotal;
 }
 
-// Apoi calculăm reducerea pentru plata integrală sau avans
+// Apoi aplicăm reducerea pentru plata integrală
 if ($rezervare['status_plata'] == 'integral') {
-    $reducere_plata_integrala = $suma_intermediara * 0.05;
-    $suma_intermediara -= $reducere_plata_integrala;
-} elseif ($rezervare['status_plata'] == 'avans') {
-    $suma_intermediara = $suma_intermediara * 0.2;
+    $reducere_plata_integrala = $suma_dupa_reducere_top * 0.05;
+    $total_final = $suma_dupa_reducere_top - $reducere_plata_integrala;
+} else {
+    // Pentru avans
+    $total_final = $subtotal * 0.20;
 }
-
-// Total final
-$total_final = $suma_intermediara;
 ?>
 
 <!DOCTYPE html>
@@ -175,12 +193,8 @@ $total_final = $suma_intermediara;
                 <?php endif; ?>
                 
                 <tr>
-                    <td>Transport (<?php echo $rezervare['numar_adulti'] + $rezervare['numar_copii']; ?> persoane):</td>
-                    <?php if ($rezervare['pret_transport_per_persoana'] > 0): ?>
-                        <td class="text-end"><?php echo number_format($pret_transport, 2); ?> €</td>
-                    <?php else: ?>
-                        <td class="text-end">Transport personal</td>
-                    <?php endif; ?>
+                    <td>Transport:</td>
+                    <td class="text-end"><?php echo number_format($pret_transport, 2); ?> €</td>
                 </tr>
 
                 <tr class="table-secondary">
@@ -188,28 +202,23 @@ $total_final = $suma_intermediara;
                     <td class="text-end"><?php echo number_format($subtotal, 2); ?> €</td>
                 </tr>
 
-                <?php if ($reducere_plata_integrala > 0): ?>
-                <tr class="text-success">
-                    <td>Reducere plată integrală (5%):</td>
-                    <td class="text-end">-<?php echo number_format($reducere_plata_integrala, 2); ?> €</td>
-                </tr>
-                <?php endif; ?>
-
-                <?php if ($reducere_client_top > 0): ?>
+                <?php if ($istoric['era_client_top']): ?>
                 <tr class="text-success">
                     <td>Reducere client top (2%):</td>
                     <td class="text-end">-<?php echo number_format($reducere_client_top, 2); ?> €</td>
                 </tr>
                 <?php endif; ?>
 
-                <tr class="table-primary fw-bold">
-                    <?php if ($rezervare['status_plata'] == 'avans'): ?>
-                        <td>Total de plată (avans 20%):</td>
-                        <td class="text-end"><?php echo number_format($rezervare['suma_plata'], 2); ?> €</td>
-                    <?php else: ?>
-                        <td>Total de plată:</td>
-                        <td class="text-end"><?php echo number_format($rezervare['suma_plata'], 2); ?> €</td>
-                    <?php endif; ?>
+                <?php if ($rezervare['status_plata'] == 'integral'): ?>
+                <tr class="text-success">
+                    <td>Reducere plată integrală (5%):</td>
+                    <td class="text-end">-<?php echo number_format($reducere_plata_integrala, 2); ?> €</td>
+                </tr>
+                <?php endif; ?>
+
+                <tr class="table-primary">
+                    <td><strong>Total de plată<?php echo $rezervare['status_plata'] == 'avans' ? ' (avans 20%)' : ''; ?>:</strong></td>
+                    <td class="text-end"><strong><?php echo number_format($total_final, 2); ?> €</strong></td>
                 </tr>
             </table>
         </div>

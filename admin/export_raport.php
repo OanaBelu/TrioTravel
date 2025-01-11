@@ -1,7 +1,15 @@
 <?php
 require_once 'check_auth.php';
 require_once '../conexiune.php';
-require_once('../tcpdf/tcpdf.php'); // Asigură-te că calea este corectă
+require_once('../tcpdf/tcpdf.php');
+
+// Verificăm dacă avem datele necesare în sesiune
+if (!isset($_SESSION['raport_incasari']) || !isset($_SESSION['raport_reduceri'])) {
+    die("Vă rugăm să generați mai întâi raportul din interfața web.");
+}
+
+// Asigurăm-ne că nu există output înainte de generarea PDF-ului
+ob_clean();
 
 // Preluăm parametrii
 $an_selectat = isset($_GET['an']) ? $_GET['an'] : date('Y');
@@ -82,39 +90,18 @@ $pdf->Cell(60, 7, 'Număr Rezervări', 1);
 $pdf->Cell(60, 7, 'Total Încasat', 1);
 $pdf->Ln();
 
-// Date încasări - exact ca în rapoarte.php
-$sql_incasari = "
-    SELECT 
-        'Avans' as status_plata,
-        3 as numar_rezervari,
-        677.60 as total_incasat
-    
-    UNION ALL
-    
-    SELECT 
-        'Integral' as status_plata,
-        9 as numar_rezervari,
-        12373.28 as total_incasat";
-
-$stmt = $conn->prepare($sql_incasari);
-$stmt->execute();
-$result_incasari = $stmt->get_result();
-
-$total_general = 13050.88; // Total exact din rapoarte.php
-
-// Afișăm datele fără să mai modificăm total_general
-while ($row = $result_incasari->fetch_assoc()) {
-    // Nu mai adunăm la total_general aici
+// Folosim datele din sesiune pentru încasări
+foreach ($_SESSION['raport_incasari'] as $row) {
     $pdf->Cell(60, 7, ucfirst($row['status_plata']), 1);
     $pdf->Cell(60, 7, $row['numar_rezervari'], 1);
     $pdf->Cell(60, 7, number_format($row['total_incasat'], 2) . ' EUR', 1);
     $pdf->Ln();
 }
 
-// Total general încasări - folosim valoarea fixă
+// Total general încasări
 $pdf->SetFont('dejavusans', 'B', 10);
 $pdf->Cell(120, 7, 'Total General', 1);
-$pdf->Cell(60, 7, number_format($total_general, 2) . ' EUR', 1);
+$pdf->Cell(60, 7, number_format($_SESSION['total_general'], 2) . ' EUR', 1);
 $pdf->Ln(15);
 
 // Raport Reduceri
@@ -128,34 +115,8 @@ $pdf->Cell(60, 7, 'Număr Aplicări', 1);
 $pdf->Cell(60, 7, 'Valoare Reduceri', 1);
 $pdf->Ln();
 
-// Query pentru reduceri - cu valori fixe ca să fie identic cu rapoarte.php
-$sql_reduceri = "
-    SELECT 
-        'Reducere Client Top (2%)' as tip_reducere,
-        5 as numar_aplicari,
-        119.51 as valoare_reduceri
-    
-    UNION ALL
-    
-    SELECT 
-        'Reducere Plată Integrală (5%)' as tip_reducere,
-        9 as numar_aplicari,
-        656.62 as valoare_reduceri
-    
-    UNION ALL
-    
-    SELECT 
-        'Reducere Copii Cazare (50%)' as tip_reducere,
-        2 as numar_aplicari,
-        1417.50 as valoare_reduceri";
-
-$stmt = $conn->prepare($sql_reduceri);
-$stmt->execute();
-$result_reduceri = $stmt->get_result();
-
-$total_reduceri = 0;
-while ($row = $result_reduceri->fetch_assoc()) {
-    $total_reduceri += $row['valoare_reduceri'];
+// Folosim datele din sesiune pentru reduceri
+foreach ($_SESSION['raport_reduceri'] as $row) {
     $pdf->Cell(60, 7, $row['tip_reducere'], 1);
     $pdf->Cell(60, 7, $row['numar_aplicari'], 1);
     $pdf->Cell(60, 7, number_format($row['valoare_reduceri'], 2) . ' EUR', 1);
@@ -165,7 +126,13 @@ while ($row = $result_reduceri->fetch_assoc()) {
 // Total reduceri
 $pdf->SetFont('dejavusans', 'B', 10);
 $pdf->Cell(120, 7, 'Total Reduceri', 1);
-$pdf->Cell(60, 7, number_format($total_reduceri, 2) . ' EUR', 1);
+$pdf->Cell(60, 7, number_format($_SESSION['total_reduceri'], 2) . ' EUR', 1);
+
+// La final, curățăm datele din sesiune
+unset($_SESSION['raport_incasari']);
+unset($_SESSION['raport_reduceri']);
+unset($_SESSION['total_general']);
+unset($_SESSION['total_reduceri']);
 
 // Output PDF
 $pdf->Output('Raport_Financiar_' . $an_selectat . ($luna_selectata ? '_' . $luni[$luna_selectata] : '') . '.pdf', 'D'); 

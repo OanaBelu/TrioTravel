@@ -21,6 +21,10 @@ $luni = [
 $an_selectat = isset($_GET['an']) ? $_GET['an'] : date('Y');
 $luna_selectata = isset($_GET['luna']) ? $_GET['luna'] : '';
 
+// Inițializăm totalurile
+$total_general = 0;
+$total_reduceri = 0;
+
 ?>
 
 <!DOCTYPE html>
@@ -78,7 +82,7 @@ $luna_selectata = isset($_GET['luna']) ? $_GET['luna'] : '';
                     <div class="col-md-4">
                         <label class="form-label">Luna (opțional)</label>
                         <select name="luna" class="form-select">
-                            <option value="">Toate lunilele</option>
+                            <option value="">Toate lunile</option>
                             <?php foreach ($luni as $nr => $nume): ?>
                                 <option value="<?= $nr ?>" <?= $nr == $luna_selectata ? 'selected' : '' ?>>
                                     <?= $nume ?>
@@ -96,7 +100,7 @@ $luna_selectata = isset($_GET['luna']) ? $_GET['luna'] : '';
 
         <!-- După formularul de filtrare -->
         <div class="mb-3">
-            <a href="export_raport.php?an=<?= $an_selectat ?><?= $luna_selectata ? '&luna='.$luna_selectata : '' ?>" 
+            <a href="export_raport.php?an=<?= $an_selectat ?><?= $luna_selectata ? '&luna='.$luna_selectata : '' ?>&use_session=1" 
                class="btn btn-success">
                 <i class="bi bi-file-earmark-pdf"></i> Export PDF
             </a>
@@ -139,16 +143,26 @@ $luna_selectata = isset($_GET['luna']) ? $_GET['luna'] : '';
                         $stmt->execute();
                         $result_incasari = $stmt->get_result();
 
-                        $total_general = 0;
-                        while ($row = $result_incasari->fetch_assoc()):
+                        $_SESSION['raport_incasari'] = [];
+                        $result_incasari_array = [];
+                        while ($row = $result_incasari->fetch_assoc()) {
+                            $result_incasari_array[] = $row;
                             $total_general += $row['total_incasat'];
-                        ?>
+                        }
+                        $_SESSION['raport_incasari'] = $result_incasari_array;
+                        $_SESSION['total_general'] = $total_general;
+
+                        // Afișăm rezultatele pentru încasări
+                        foreach ($result_incasari_array as $row) {
+                            ?>
                             <tr>
                                 <td><?= ucfirst($row['status_plata']) ?></td>
                                 <td><?= $row['numar_rezervari'] ?></td>
                                 <td><?= number_format($row['total_incasat'], 2) ?> EUR</td>
                             </tr>
-                        <?php endwhile; ?>
+                            <?php
+                        }
+                        ?>
                         <tr class="table-info">
                             <td><strong>Total General</strong></td>
                             <td></td>
@@ -262,22 +276,34 @@ $luna_selectata = isset($_GET['luna']) ? $_GET['luna'] : '';
                         $stmt->execute();
                         $result_reduceri = $stmt->get_result();
 
-                        $total_reduceri = 0;
-                        if ($result_reduceri->num_rows > 0) {
-                            while ($row = $result_reduceri->fetch_assoc()):
-                                $total_reduceri += $row['valoare_reduceri'];
-                        ?>
+                        $_SESSION['raport_reduceri'] = [];
+                        $result_reduceri_array = [];
+                        while ($row = $result_reduceri->fetch_assoc()) {
+                            $result_reduceri_array[] = $row;
+                            $total_reduceri += $row['valoare_reduceri'];
+                        }
+                        $_SESSION['raport_reduceri'] = $result_reduceri_array;
+                        $_SESSION['total_reduceri'] = $total_reduceri;
+
+                        // Afișăm rezultatele pentru reduceri
+                        if (!empty($result_reduceri_array)) {
+                            foreach ($result_reduceri_array as $row) {
+                                ?>
                                 <tr>
                                     <td><?= htmlspecialchars($row['tip_reducere']) ?></td>
                                     <td><?= (int)$row['numar_aplicari'] ?></td>
                                     <td><?= sprintf('%.2f', floatval($row['valoare_reduceri'])) ?> EUR</td>
                                 </tr>
-                        <?php endwhile; 
-                        } else { ?>
+                                <?php
+                            }
+                        } else {
+                            ?>
                             <tr>
                                 <td colspan="3" class="text-center">Nu există reduceri în perioada selectată</td>
                             </tr>
-                        <?php } ?>
+                            <?php
+                        }
+                        ?>
 
                         <tr class="table-info">
                             <td><strong>Total Reduceri</strong></td>

@@ -8,13 +8,13 @@ if (!isset($_GET['id'])) {
 
 $rezervare_id = $_GET['id'];
 
-// Query simplu pentru detaliile rezervării
+// Preluăm toate datele necesare pentru confirmare
 $sql = "SELECT r.*, 
         e.nume as nume_excursie, 
+        e.pret_cazare_per_persoana,
         e.data_inceput, 
         e.data_sfarsit,
         CONCAT(c.prenume, ' ', c.nume) as nume_client,
-        c.email,
         c.este_client_top,
         ot.tip_transport,
         ot.pret_per_persoana as pret_transport_per_persoana
@@ -29,11 +29,42 @@ $stmt->bind_param("i", $rezervare_id);
 $stmt->execute();
 $rezervare = $stmt->get_result()->fetch_assoc();
 
-// Calculele pentru prețuri
-$pret_cazare_adulti = $rezervare['pret_cazare'] * $rezervare['numar_adulti'];
-$pret_cazare_copii = $rezervare['numar_copii'] > 0 ? $rezervare['pret_cazare'] * $rezervare['numar_copii'] * 0.5 : 0;
-$pret_transport = $rezervare['pret_transport'];
+// Calculăm totalurile
+$pret_cazare_adult = $rezervare['pret_cazare_per_persoana'];
+$pret_cazare_adulti = $pret_cazare_adult * $rezervare['numar_adulti'];
+$pret_cazare_copii = $rezervare['numar_copii'] > 0 ? 
+    ($pret_cazare_adult * 0.5 * $rezervare['numar_copii']) : 0;
+
+// Calculăm prețul transportului
+$pret_transport = 0;
+if ($rezervare['transport_id']) {
+    $pret_transport = $rezervare['pret_transport_per_persoana'] * 
+        ($rezervare['numar_adulti'] + $rezervare['numar_copii']);
+}
+
+// Inițializăm variabilele pentru reduceri
+$reducere_plata_integrala = 0;
+$reducere_client_top = 0;
+
+// Calculăm subtotalul
 $subtotal = $pret_cazare_adulti + $pret_cazare_copii + $pret_transport;
+
+// Aplicăm reducerea de client top (2%) indiferent de tipul plății
+if ($rezervare['este_client_top']) {
+    $reducere_client_top = $subtotal * 0.02;
+    $suma_dupa_reducere_top = $subtotal - $reducere_client_top;
+} else {
+    $suma_dupa_reducere_top = $subtotal;
+}
+
+// Apoi aplicăm reducerea pentru plata integrală (5%) sau calculăm avansul
+if ($rezervare['status_plata'] == 'integral') {
+    $reducere_plata_integrala = $suma_dupa_reducere_top * 0.05;
+    $total_final = $suma_dupa_reducere_top - $reducere_plata_integrala;
+} else {
+    // Pentru avans - aplicăm 20% la suma după reducerea de client top
+    $total_final = $suma_dupa_reducere_top * 0.20;
+}
 
 // Verificăm dacă clientul era client top la momentul rezervării
 $sql_verificare = "SELECT COUNT(*) as rezervari_anterioare 
@@ -47,26 +78,6 @@ $stmt->execute();
 $result = $stmt->get_result();
 $row = $result->fetch_assoc();
 $era_client_top = ($row['rezervari_anterioare'] >= 2);
-
-// Calculăm reducerile în ordinea corectă
-$suma_intermediara = $subtotal;
-$reducere_client_top = 0;
-$reducere_plata_integrala = 0;
-
-// Mai întâi reducerea client top
-if ($era_client_top) {
-    $reducere_client_top = $subtotal * 0.02;
-    $suma_intermediara -= $reducere_client_top;
-}
-
-// Apoi reducerea pentru plată integrală
-if ($rezervare['status_plata'] == 'integral') {
-    $reducere_plata_integrala = $suma_intermediara * 0.05;
-    $suma_intermediara -= $reducere_plata_integrala;
-}
-
-// Total final
-$total_final = $suma_intermediara;
 
 // Preluăm participanții
 $sql_participanti = "SELECT nume, prenume, tip_participant 
@@ -136,9 +147,7 @@ $participanti = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
                     <tr>
                         <td>Transport:</td>
-                        <td class="text-end">
-                            <?php echo $rezervare['pret_transport'] > 0 ? number_format($pret_transport, 2) . ' €' : 'Transport propriu'; ?>
-                        </td>
+                        <td class="text-end"><?php echo number_format($pret_transport, 2); ?> €</td>
                     </tr>
 
                     <tr class="table-secondary">
@@ -146,14 +155,14 @@ $participanti = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                         <td class="text-end"><?php echo number_format($subtotal, 2); ?> €</td>
                     </tr>
 
-                    <?php if ($reducere_client_top > 0): ?>
+                    <?php if ($rezervare['este_client_top']): ?>
                     <tr class="text-success">
                         <td>Reducere client top (2%):</td>
                         <td class="text-end">-<?php echo number_format($reducere_client_top, 2); ?> €</td>
                     </tr>
                     <?php endif; ?>
 
-                    <?php if ($reducere_plata_integrala > 0): ?>
+                    <?php if ($rezervare['status_plata'] == 'integral'): ?>
                     <tr class="text-success">
                         <td>Reducere plată integrală (5%):</td>
                         <td class="text-end">-<?php echo number_format($reducere_plata_integrala, 2); ?> €</td>
@@ -161,7 +170,7 @@ $participanti = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                     <?php endif; ?>
 
                     <tr class="table-primary">
-                        <td><strong>Total de plată:</strong></td>
+                        <td><strong>Total de plată<?php echo $rezervare['status_plata'] == 'avans' ? ' (avans 20%)' : ''; ?>:</strong></td>
                         <td class="text-end"><strong><?php echo number_format($total_final, 2); ?> €</strong></td>
                     </tr>
                 </table>

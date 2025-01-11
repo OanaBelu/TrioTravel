@@ -22,31 +22,26 @@ $sql = "SELECT r.*,
         e.data_inceput, 
         e.data_sfarsit,
         r.pret_cazare,
-        CONCAT(c.prenume, ' ', c.nume) as nume_client, 
+        COALESCE(
+            (SELECT CONCAT(p.prenume, ' ', p.nume)
+             FROM participanti p 
+             WHERE p.rezervare_id = r.id 
+             ORDER BY p.id ASC
+             LIMIT 1),
+            CONCAT(c.prenume, ' ', c.nume)
+        ) as nume_client,
         c.email,
         c.telefon,
-        c.este_client_top,
+        (SELECT COUNT(*) 
+         FROM rezervari r2 
+         WHERE r2.client_id = r.client_id 
+         AND r2.data_creare < r.data_creare) as rezervari_anterioare,
         ot.tip_transport,
         ot.pret_per_persoana as pret_transport_per_persoana,
         (SELECT COALESCE(SUM(suma), 0) 
          FROM chitante 
          WHERE rezervare_id = r.id 
-         AND tip_operatie = 'plata') as suma_platita,
-        -- Verificăm dacă clientul era top la momentul rezervării
-        (SELECT 
-            COUNT(*) >= 3 OR 
-            (SELECT COALESCE(SUM(ch.suma), 0)
-             FROM chitante ch
-             JOIN rezervari r_anterior ON ch.rezervare_id = r_anterior.id
-             WHERE r_anterior.client_id = r.client_id
-             AND r_anterior.data_creare < r.data_creare
-             AND ch.tip_operatie = 'plata'
-             AND r_anterior.status_plata != 'anulata') >= 5000
-         FROM rezervari r_anterior
-         WHERE r_anterior.client_id = r.client_id 
-         AND r_anterior.data_creare < r.data_creare
-         AND r_anterior.status_plata != 'anulata'
-        ) as era_client_top
+         AND tip_operatie = 'plata') as suma_platita
         FROM rezervari r
         LEFT JOIN excursii e ON r.excursie_id = e.id
         LEFT JOIN clienti c ON r.client_id = c.id
@@ -56,10 +51,14 @@ $result = $conn->query($sql);
 
 // Funcție pentru verificarea dacă există cel puțin un client top în rezervare
 function areClientTop($rezervare_id, $conn) {
-    // Verificăm clientul principal
-    $sql = "SELECT c.este_client_top 
+    // Verificăm dacă rezervarea este din anul curent
+    $sql = "SELECT r.data_creare, r.client_id,
+            (SELECT COUNT(*) 
+             FROM rezervari r2 
+             WHERE r2.client_id = r.client_id 
+             AND r2.data_creare < r.data_creare 
+             AND YEAR(r2.data_creare) = YEAR(r.data_creare)) as rezervari_anterioare
             FROM rezervari r 
-            JOIN clienti c ON r.client_id = c.id 
             WHERE r.id = ?";
     
     $stmt = $conn->prepare($sql);
@@ -68,27 +67,8 @@ function areClientTop($rezervare_id, $conn) {
     $result = $stmt->get_result();
     
     if ($row = $result->fetch_assoc()) {
-        if ($row['este_client_top'] == 1) {
-            return true;
-        }
-    }
-    
-    // Verificăm participanții
-    $sql = "SELECT c.este_client_top 
-            FROM participanti p 
-            JOIN clienti c ON (p.nume = c.nume AND p.prenume = c.prenume 
-                             AND (p.email = c.email OR p.telefon = c.telefon))
-            WHERE p.rezervare_id = ?";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $rezervare_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    while ($row = $result->fetch_assoc()) {
-        if ($row['este_client_top'] == 1) {
-            return true;
-        }
+        // Clientul devine top după a treia rezervare în anul curent
+        return $row['rezervari_anterioare'] >= 2;
     }
     
     return false;
@@ -252,26 +232,12 @@ function verificaParticipantExistent($nume, $prenume, $numar_identitate, $rezerv
                                     <br>Transport: <?php echo number_format($pret_transport, 2); ?> €
                                 <?php endif; ?>
                                 
+                                <?php if ($rezervare['rezervari_anterioare'] >= 2): ?>
+                                    <br><span class="text-success">Reducere client top: -2%</span>
+                                <?php endif; ?>
+                                
                                 <?php if ($rezervare['status_plata'] == 'integral'): ?>
-                                    <br>
-                                    <?php
-                                    // Calculăm numărul de rezervări anterioare pentru acest client
-                                    $sql_anterior = "SELECT COUNT(*) as numar_rezervari
-                                        FROM rezervari 
-                                        WHERE client_id = ? 
-                                        AND data_creare < ? 
-                                        AND status_plata != 'anulata'";
-                                    $stmt = $conn->prepare($sql_anterior);
-                                    $stmt->bind_param("is", $rezervare['client_id'], $rezervare['data_creare']);
-                                    $stmt->execute();
-                                    $result_anterior = $stmt->get_result();
-                                    $rezervari_anterioare = $result_anterior->fetch_assoc()['numar_rezervari'];
-                                    ?>
-                                    
-                                    <span class="text-success">Reducere plată integrală: -5%</span>
-                                    <?php if ($rezervari_anterioare >= 2): // A treia rezervare sau mai mult ?>
-                                        <br><span class="text-success">Reducere client top: -2%</span>
-                                    <?php endif; ?>
+                                    <br><span class="text-success">Reducere plată integrală: -5%</span>
                                 <?php endif; ?>
                             </small>
                         </td>
